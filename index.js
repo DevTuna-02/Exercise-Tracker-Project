@@ -35,20 +35,22 @@ let userLog = new mongoose.model('userData',userSchema);
 
 app.post('/api/users/:_id/exercises',(req,res)=>{
   if(req.body.description&&req.body.duration){
-    userLog.findById(req.params['_id'])
+    userLog.findById(req.params._id)
            .then(doc=>{
             doc.log.push({
           description:req.body.description,
           duration:req.body.duration,
-          date:req.body.date?req.body.date:new Date()
+          date:req.body.date?new Date(req.body.date).toDateString():new Date().toDateString()
         })
-        doc.save().then(user=>res.json({
-          "_id": user['_id'],
-          "username": user.username,
-          "date": user.log[user.log.length-1].date,
-          "duration": user.log[user.log.length-1].duration,
-          "description": user.log[user.log.length-1].description
-      }))
+        doc.save().then(user=>{
+          res.json({
+          _id: user._id,
+          username: user.username,
+          description: user.log[user.log.length-1].description,
+          duration: user.log[user.log.length-1].duration,
+          date: user.log[user.log.length-1].date.toDateString()
+          
+      })})
            })
            .catch(err=>console.error(err))
         
@@ -57,8 +59,31 @@ app.post('/api/users/:_id/exercises',(req,res)=>{
     })
 
     app.get('/api/users/:_id/logs',(req,res)=>{
-      userLog.findById(req.params['_id'])
-           .then(doc=>res.json({...doc['_doc'],count:doc['_doc'].log.length}))
+      let {from,to,limit}= req.query
+
+      const filterDate=(date)=>{
+        if(from||to){
+          return date.getTime()>=new Date(from?from:-8640000000000000).getTime()
+        && date.getTime()<=new Date(to?to:8640000000000000).getTime()
+        }else{
+          return true;
+        }
+        
+        
+      }
+      
+      
+      userLog.findById(req.params['_id']).lean()
+           .then(doc=>{
+             res.json({
+               ...doc,
+               count:doc.log.length,
+               log:doc.log.filter(e=>filterDate(e.date))
+                          .map(e=>({...e,date:e.date.toDateString()}))
+                          .slice(0,limit?parseInt(limit):undefined)
+             })
+           })
+             // .map(e=>({...e,date:e.date.toDateString()}))
     })
 
 
