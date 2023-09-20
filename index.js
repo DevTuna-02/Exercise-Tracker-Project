@@ -2,8 +2,9 @@ const express = require('express')
 const app = express()
 const cors = require('cors')
 const mongoose = require('mongoose')
-const uri = 'mongodb+srv://ShadyRoombot:Unsichtbar312617@cluster0.geecjez.mongodb.net/exerciseTracker?retryWrites=true&w=majority'
+
 require('dotenv').config()
+const uri = process.env.URI
 mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true });
 app.use(cors())
 app.use(express.static('public'))
